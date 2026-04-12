@@ -1,0 +1,223 @@
+const express = require("express");
+const MenuItem = require("../models/MenuItem");
+const Order = require("../models/Order");
+
+const router = express.Router();
+
+router.get("/popular", async (req, res, next) => {
+  try {
+    const parsedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0
+      ? Math.min(Math.floor(parsedLimit), 20)
+      : 6;
+
+    const [menuRowsRaw, frequencies] = await Promise.all([
+      MenuItem.find({ isActive: true }).lean(),
+      Order.aggregate([
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.name",
+            totalQty: { $sum: "$items.qty" },
+            menuItemId: { $first: "$items.menuItemId" },
+            lastPrice: { $max: "$items.price" },
+          },
+        },
+        { $sort: { totalQty: -1, _id: 1 } },
+        { $limit: limit },
+      ]),
+    ]);
+
+    const uniqueByName = new Map();
+    menuRowsRaw.forEach((row) => {
+      const key = String(row.name || "").trim().toLowerCase();
+      if (!key || uniqueByName.has(key)) {
+        return;
+      }
+      uniqueByName.set(key, row);
+    });
+
+    const menuRows = Array.from(uniqueByName.values());
+    const menuById = new Map(menuRows.map((row) => [String(row._id), row]));
+    const menuByName = new Map(menuRows.map((row) => [row.name.toLowerCase(), row]));
+
+    const ranked = frequencies
+      .map((entry) => {
+        const byId = entry.menuItemId ? menuById.get(String(entry.menuItemId)) : null;
+        const byName = menuByName.get(String(entry._id || "").toLowerCase());
+        const menu = byId || byName;
+
+        if (!menu) {
+          return null;
+        }
+
+        return {
+          id: String(menu._id),
+          name: menu.name,
+          price: menu.price ?? entry.lastPrice ?? 0,
+          tag: menu.tag || "Food",
+          category: menu.category || "General",
+          frequency: entry.totalQty ?? 0,
+        };
+      })
+      .filter(Boolean);
+
+    if (ranked.length >= limit) {
+      return res.json(ranked.slice(0, limit));
+    }
+
+    const rankedIds = new Set(ranked.map((item) => item.id));
+    const filler = menuRows
+      .filter((row) => !rankedIds.has(String(row._id)))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .slice(0, limit - ranked.length)
+      .map((row) => ({
+        id: String(row._id),
+        name: row.name,
+        price: row.price,
+        tag: row.tag,
+        category: row.category,
+        frequency: 0,
+      }));
+
+    return res.json([...ranked, ...filler]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/", async (_req, res, next) => {
+  try {
+    const rows = await MenuItem.find({ isActive: true }).sort({ name: 1 }).lean();
+    const data = rows.map((item) => ({
+      id: String(item._id),
+      name: item.name,
+      price: item.price,
+      tag: item.tag,
+      category: item.category,
+      isActive: item.isActive !== false,
+    }));
+
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/all", async (_req, res, next) => {
+  try {
+    const rows = await MenuItem.find().sort({ name: 1 }).lean();
+    const data = rows.map((item) => ({
+      id: String(item._id),
+      name: item.name,
+      price: item.price,
+      tag: item.tag,
+      category: item.category,
+      isActive: item.isActive !== false,
+    }));
+
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/", async (req, res, next) => {
+  try {
+    const { name, price, tag, category } = req.body;
+
+    if (!name || typeof price !== "number") {
+      return res.status(400).json({ message: "name and numeric price are required" });
+    }
+
+    const created = await MenuItem.create({ name, price, tag, category });
+
+    res.status(201).json({
+      id: String(created._id),
+      name: created.name,
+      price: created.price,
+      tag: created.tag,
+      category: created.category,
+      isActive: created.isActive !== false,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/:id/availability", async (req, res, next) => {
+  try {
+    const menuId = String(req.params.id || "").trim();
+    const isActive = Boolean(req.body?.isActive);
+
+    const updated = await MenuItem.findByIdAndUpdate(
+      menuId,
+      { $set: { isActive } },
+      { new: true },
+    ).lean();
+
+    if (!updated) {
+      return res.status(404).json({ message: "Menu item not found" });
+    }
+
+    res.json({
+      id: String(updated._id),
+      name: updated.name,
+      price: updated.price,
+      tag: updated.tag,
+      category: updated.category,
+      isActive: updated.isActive !== false,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put("/:id", async (req, res, next) => {
+  try {
+    const { name, price, tag, category } = req.body;
+    const menuId = req.params.id;
+
+    if (!name || typeof price !== "number") {
+      return res.status(400).json({ message: "name and numeric price are required" });
+    }
+
+    const updated = await MenuItem.findByIdAndUpdate(
+      menuId,
+      { $set: { name, price, tag, category } },
+      { new: true }
+    ).lean();
+
+    if (!updated) {
+      return res.status(404).json({ message: "Menu item not found" });
+    }
+
+    res.json({
+      id: String(updated._id),
+      name: updated.name,
+      price: updated.price,
+      tag: updated.tag,
+      category: updated.category,
+      isActive: updated.isActive !== false,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const menuId = req.params.id;
+    const deleted = await MenuItem.findByIdAndDelete(menuId);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Menu item not found" });
+    }
+
+    res.json({ message: "Menu item deleted successfully", id: menuId });
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
