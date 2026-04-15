@@ -2,6 +2,7 @@
 
 import { BarChart3, Box, FileText, List, LogOut, PieChart, RefreshCcw, Settings, SlidersHorizontal, Store } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export function BillSidebar() {
@@ -11,7 +12,7 @@ export function BillSidebar() {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 
   const navigation = [
-    { label: "Billing", icon: FileText, href: "/bill" },
+    { label: "Tables", icon: FileText, href: "/bill" },
     { label: "Operations", icon: SlidersHorizontal, href: "/bill/operations" },
     { label: "Dashboard", icon: BarChart3, href: "/dashboard" },
     { label: "Live View", icon: PieChart, href: "/bill/live-view" },
@@ -24,11 +25,9 @@ export function BillSidebar() {
   return (
     <aside className="hidden h-full w-24 flex-col border-r border-[#e5e7eb] bg-white lg:flex">
       {/* Logo Block */}
-      <div className="flex h-16 w-full items-center justify-center bg-[#df343b] text-white">
+      <div className="flex h-16 w-full items-center justify-center bg-[#000000] text-white">
         <div className="flex flex-col items-center">
-          <Store className="h-6 w-6" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Tabio</span>
-          <span className="text-[10px] font-bold uppercase tracking-wider">POSS</span>
+          <Image src="/tablogo.png" alt="Tabio Logo" width={60} height={30} className="object-contain" />
         </div>
       </div>
 

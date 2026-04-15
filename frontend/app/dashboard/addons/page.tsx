@@ -1,10 +1,13 @@
 "use client";
 
 import { Download, Plus, Search } from "lucide-react";
+import { useState } from "react";
 
 export default function DashboardAddons() {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
       <div className="flex items-center justify-between">
          <h1 className="text-xl font-medium text-gray-800">Addons Config</h1>
          <div className="text-sm text-gray-500">
@@ -28,7 +31,7 @@ export default function DashboardAddons() {
                   <button className="flex items-center gap-1 border border-gray-300 bg-gray-50 text-gray-700 px-3 py-1.5 rounded text-[13px] font-bold hover:bg-gray-100">
                      <Download className="w-3 h-3" /> Export
                   </button>
-                  <button className="flex items-center gap-1 bg-[#df343b] text-white px-3 py-1.5 rounded text-[13px] font-bold hover:bg-red-700">
+                  <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1 bg-[#df343b] text-white px-3 py-1.5 rounded text-[13px] font-bold hover:bg-red-700">
                      <Plus className="w-3 h-3" /> Create Group
                   </button>
                </div>
@@ -70,6 +73,25 @@ export default function DashboardAddons() {
             <span>Showing 1 to 1 of 1 entries</span>
          </div>
       </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+           <div className="w-96 rounded-lg bg-white p-6 shadow-xl">
+              <h2 className="text-lg font-bold text-gray-800">Create Addon Group</h2>
+              <div className="mt-4 flex flex-col gap-3">
+                 <input type="text" placeholder="Group Name" className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500" />
+                 <select className="w-full rounded border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500">
+                    <option>Single Selection</option>
+                    <option>Multiple Add-ons</option>
+                 </select>
+              </div>
+              <div className="mt-6 flex justify-end gap-2">
+                 <button onClick={() => setShowCreateModal(false)} className="rounded border border-gray-300 bg-gray-50 px-4 py-2 text-sm font-medium hover:bg-gray-100">Cancel</button>
+                 <button onClick={() => { alert("Group Created Successfully!"); setShowCreateModal(false); }} className="rounded bg-[#00a65a] px-4 py-2 text-sm font-bold text-white hover:bg-green-600">Save Group</button>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 }

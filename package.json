@@ -1,0 +1,38 @@
+{
+  "name": "tabio-pos",
+  "version": "1.0.0",
+  "description": "Tabio POS desktop application setup.",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:exe": "electron-builder --win",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "tree-kill": "^1.2.2"
+  },
+  "build": {
+    "appId": "com.tabio.pos",
+    "productName": "Tabio Setup",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "asar": false,
+    "files": [
+      "electron-main.js",
+      "package.json",
+      "backend/**/*",
+      "frontend/.next/**/*",
+      "frontend/public/**/*",
+      "frontend/package.json",
+      "frontend/node_modules/**/*"
+    ]
+  }
+}

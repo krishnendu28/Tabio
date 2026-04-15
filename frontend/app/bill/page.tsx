@@ -353,12 +353,10 @@ export default function Home() {
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const isThemeReadyRef = useRef(false);
   const [orders, setOrders] = useState<BillOrder[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(DUMMY_MENU_ITEMS);
-  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>(DUMMY_MENU_ITEMS);
-  const [menuAvailability, setMenuAvailability] = useState<Record<string, boolean>>(
-    Object.fromEntries(DUMMY_MENU_ITEMS.map((item) => [item.id, true])),
-  );
-  const [tables, setTables] = useState<TableNode[]>(DUMMY_TABLES);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
+  const [menuAvailability, setMenuAvailability] = useState<Record<string, boolean>>({});
+  const [tables, setTables] = useState<TableNode[]>([]);
   const [menuSearch, setMenuSearch] = useState("");
   const [newOrderCustomer, setNewOrderCustomer] = useState("");
   const [newOrderMobile, setNewOrderMobile] = useState("");
@@ -560,7 +558,7 @@ export default function Home() {
       if (parsedPopularMenu.length > 0) {
         setMenuItems(parsedPopularMenu.map(mapMenuFromBackend).slice(0, 50));
       } else {
-        setMenuItems(DUMMY_MENU_ITEMS);
+        setMenuItems([]);
       }
 
       if (parsedFullMenu.length > 0) {
@@ -570,16 +568,14 @@ export default function Home() {
           Object.fromEntries(mapped.map((item) => [item.id, item.isActive !== false])),
         );
       } else {
-        setAllMenuItems(DUMMY_MENU_ITEMS);
-        setMenuAvailability(
-          Object.fromEntries(DUMMY_MENU_ITEMS.map((item) => [item.id, true])),
-        );
+        setAllMenuItems([]);
+        setMenuAvailability({});
       }
 
       if (parsedTables.length > 0) {
         setTables(parsedTables.map(mapTableFromBackend));
       } else {
-        setTables(DUMMY_TABLES);
+        setTables([]);
       }
     }
 

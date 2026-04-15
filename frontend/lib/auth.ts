@@ -33,6 +33,7 @@ export function setAuthSession(token: string, user: AuthUser): void {
   if (!isBrowser()) return;
   localStorage.setItem(AUTH_TOKEN_KEY, token);
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  document.cookie = `tabio_auth_token=${token}; path=/; max-age=604800; samesite=strict`;
   window.dispatchEvent(new Event("tabio-auth-changed"));
 }
 
@@ -40,5 +41,6 @@ export function clearAuthSession(): void {
   if (!isBrowser()) return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
+  document.cookie = `tabio_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   window.dispatchEvent(new Event("tabio-auth-changed"));
 }

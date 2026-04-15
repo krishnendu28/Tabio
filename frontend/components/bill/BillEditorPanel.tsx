@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CreditCard, MoreHorizontal, Search, Trash2 } from "lucide-react";
 import type { MenuItem, OrderItem, OrderType, Palette, PaymentType, SectionType, SplitPayment } from "./types";
 
@@ -49,6 +50,7 @@ type BillEditorPanelProps = {
 };
 
 export function BillEditorPanel(props: BillEditorPanelProps) {
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const {
     orderType,
     section,
@@ -339,12 +341,22 @@ export function BillEditorPanel(props: BillEditorPanelProps) {
           >
             Other
           </button>
-          <button
-            type="button"
-            className={`flex items-center justify-center rounded py-1.5 font-bold text-[11px] bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200`}
-          >
-             More <MoreHorizontal className="ml-1 h-3 w-3" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              className={`flex w-full items-center justify-center rounded py-1.5 font-bold text-[11px] bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200`}
+              onClick={() => setShowMoreMenu(!showMoreMenu)}
+            >
+               More <MoreHorizontal className="ml-1 h-3 w-3" />
+            </button>
+            {showMoreMenu && (
+              <div className="absolute bottom-full right-0 mb-1 w-32 rounded bg-white p-1 shadow-xl border border-gray-200 z-50 flex flex-col font-medium text-gray-700 text-left">
+                <button className="text-left px-3 py-1.5 hover:bg-gray-100 rounded" onClick={() => { alert("Reprint Bill"); setShowMoreMenu(false); }}>Reprint</button>
+                <button className="text-left px-3 py-1.5 hover:bg-gray-100 rounded" onClick={() => { alert("Split Payment"); setShowMoreMenu(false); }}>Split</button>
+                <button className="text-left px-3 py-1.5 hover:bg-gray-100 rounded text-red-600" onClick={() => { alert("Void Bill"); setShowMoreMenu(false); }}>Void</button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Action Buttons row */}
