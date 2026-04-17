@@ -24,6 +24,24 @@ body {
   color-scheme: light;
 }
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only, .print-only * {
+    visibility: visible;
+  }
+  .print-only {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  header, aside, .no-print {
+    display: none !important;
+  }
+}
+
 /* Custom scrollbars for the dense flat UI */
 ::-webkit-scrollbar {
   width: 6px;

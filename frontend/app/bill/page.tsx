@@ -24,6 +24,8 @@ import { TopHeader } from "@/components/bill/TopHeader";
 import { TableManagementModal } from "@/components/bill/TableManagementModal";
 import { BillSidebar } from "@/components/bill/BillSidebar";
 import { OrderSidebar } from "@/components/bill/OrderSidebar";
+import { TaxInvoice } from "@/components/bill/TaxInvoice";
+import { SplitBillModal } from "@/components/bill/SplitBillModal";
 import type { BillOrder, MenuItem, OrderItem, OrderType, Palette, PaymentType, SectionType, SplitPayment, TableNode, TableStatus } from "@/components/bill/types";
 
 type BackendMenuItem = {
@@ -39,16 +41,10 @@ type BackendOrderItem = {
   id?: string | number;
   name?: string;
   qty?: number;
-  category?: string;
-  isActive?: boolean;
-};
-
-type BackendOrderItem = {
-  id?: string | number;
-  name?: string;
-  qty?: number;
   quantity?: number;
   price?: number;
+  category?: string;
+  isActive?: boolean;
 };
 
 type BackendOrder = {
@@ -351,6 +347,7 @@ export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [theme, setTheme] = useState<"dark" | "light">("light");
+  const isDark = theme === "dark";
   const isThemeReadyRef = useRef(false);
   const [orders, setOrders] = useState<BillOrder[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -380,6 +377,7 @@ export default function Home() {
   const [quickUpdateStatus, setQuickUpdateStatus] = useState<TableStatus>("Available");
   const [quickViewData, setQuickViewData] = useState<{ tableId: string; status: TableStatus; order: BillOrder | null } | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [showSplitModal, setShowSplitModal] = useState(false);
 
   const openOrders = useMemo(() => orders.filter((order) => !order.settled), [orders]);
 
@@ -469,9 +467,9 @@ export default function Home() {
           changed = true;
           return {
             ...table,
-            status: "Occupied",
+            status: "Occupied" as TableStatus,
             assignedOrderId: openOrder.id,
-          };
+          } as TableNode;
         }
 
         if (table.status !== "Occupied") {
@@ -485,9 +483,9 @@ export default function Home() {
         changed = true;
         return {
           ...table,
-          status: "Available",
+          status: "Available" as TableStatus,
           assignedOrderId: null,
-        };
+        } as TableNode;
       });
 
       return changed ? next : prev;
@@ -885,8 +883,6 @@ export default function Home() {
     window.localStorage.setItem("pos-theme", theme);
   }, [theme]);
 
-  const isDark = theme === "dark";
-
   const palette: Palette = {
     shell: isDark ? "bg-[#05070d] text-slate-100" : "bg-[#f5eee8] text-slate-900",
     backdrop: isDark
@@ -1184,60 +1180,23 @@ export default function Home() {
       };
       moveOrderToSaved(savedOrder);
 
-      const printWindow = typeof window !== "undefined"
-        ? window.open("", "_blank", "width=840,height=700")
-        : null;
-
       const persisted = await persistOrderToBackend(savedOrder);
       if (!persisted) {
-        if (printWindow) {
-          printWindow.close();
-        }
         setBanner(`${currentOrder.id} saved locally. Backend sync pending.`);
-        return;
+        // Even if backend fails, we might want to allow print for the customer
       }
 
-      setBanner(`${currentOrder.id} saved.`);
-      if (printWindow) {
-        const now = new Date();
-        const rowsHtml = currentOrder.items
-          .map((item, index) => {
-            const lineTotal = item.qty * item.price;
-            return `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td>${item.price}</td><td>${lineTotal}</td></tr>`;
-          })
-          .join("");
+      setBanner(`${currentOrder.id} saved. Opening print dialog...`);
+      
+      // We give a tiny timeout to ensure the TaxInvoice component (rendered at bottom of page) 
+      // is populated with the latest currentOrder state if react hasn't flushed it yet.
+      setTimeout(() => {
+        window.print();
+      }, 300);
 
-        printWindow.document.write(`<!doctype html><html><head><title>Bill ${currentOrder.id}</title><style>
-        body{font-family:Arial,sans-serif;padding:20px;color:#111}
-        h1{margin:0 0 6px 0;font-size:22px}
-        .meta{margin-bottom:12px;font-size:13px}
-        table{width:100%;border-collapse:collapse;margin-top:12px}
-        th,td{border:1px solid #ddd;padding:8px;font-size:13px;text-align:left}
-        th{background:#f4f4f4}
-        .totals{margin-top:14px;display:flex;justify-content:flex-end}
-        .totals div{width:260px}
-        .totals p{display:flex;justify-content:space-between;margin:6px 0}
-        .strong{font-weight:bold;font-size:15px}
-      </style></head><body>
-        <h1>Restaurant POS Bill</h1>
-        <div class="meta">
-          <div>Bill No: ${currentOrder.id}</div>
-          <div>Date: ${now.toLocaleString()}</div>
-          <div>Customer: ${currentOrder.customer || "Guest"}</div>
-          <div>Mobile: ${currentOrder.mobile || "-"}</div>
-          <div>Type: ${currentOrder.type} | Section: ${currentOrder.section} | Table: ${currentOrder.tableId || "-"} | Persons: ${currentOrder.persons ?? 1}</div>
-        </div>
-        <table><thead><tr><th>#</th><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rowsHtml || "<tr><td colspan='5'>No items</td></tr>"}</tbody></table>
-        <div class="totals"><div>
-          <p><span>Subtotal</span><span>${subtotal}</span></p>
-          <p><span>Tax</span><span>${tax}</span></p>
-          <p class="strong"><span>Grand Total</span><span>${grandTotal}</span></p>
-        </div></div>
-      </body></html>`);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-      }
+    } catch (err) {
+      console.error("Print failed", err);
+      setBanner("Failed to initiate print.");
     } finally {
       setActiveBillAction(null);
     }
@@ -1437,6 +1396,39 @@ export default function Home() {
     } finally {
       setActiveBillAction(null);
     }
+  }
+
+  async function handleVoidCurrentOrder() {
+    if (!currentOrder) return;
+    if (!confirm(`Are you sure you want to VOID order ${currentOrder.id}?`)) return;
+    try {
+      setActiveBillAction("settle");
+      await axios.patch(`${POS_API_BASE_URL}/api/orders/${currentOrder.id.replace("#", "")}/cancel`, {
+        cancelReason: "Voided from billing screen"
+      }).catch(() => 
+        axios.patch(`${POS_API_BASE_URL}/orders/${currentOrder.id.replace("#", "")}/cancel`, {
+          cancelReason: "Voided from billing screen"
+        })
+      );
+      setOrders(prev => prev.filter(o => o.id !== currentOrder.id));
+      setSelectedOrderId("");
+      if (currentOrder.tableId) {
+        setTables(prev => prev.map(t => t.id === currentOrder.tableId ? { ...t, status: "Available", assignedOrderId: null } : t));
+      }
+      setBanner(`Order ${currentOrder.id} has been voided.`);
+    } catch (err) {
+      alert("Failed to void order.");
+    } finally {
+      setActiveBillAction(null);
+    }
+  }
+
+  async function handleReprint() {
+     if (!currentOrder) return;
+     setBanner("Initiating reprint...");
+     setTimeout(() => {
+        window.print();
+     }, 300);
   }
 
   function extractCreatedOrder(payload: unknown): BackendOrder | null {
@@ -1805,7 +1797,7 @@ export default function Home() {
       <div className={`min-h-screen ${palette.shell}`}>
         <div className={`fixed inset-0 -z-10 ${palette.backdrop}`} />
         <div className="flex min-h-screen">
-          <BillSidebar isDark={isDark} />
+          <BillSidebar />
 
           <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-1 flex-col px-4 py-8 md:px-6">
             <div className="mb-6 flex items-center justify-between gap-3">
@@ -2159,6 +2151,9 @@ export default function Home() {
                 isSettlingAndSaving={activeBillAction === "settle"}
                 isCreatingKOT={activeBillAction === "kot"}
                 isCreatingKOTPrint={activeBillAction === "kotPrint"}
+                onReprint={handleReprint}
+                onSplit={() => setShowSplitModal(true)}
+                onVoid={handleVoidCurrentOrder}
                 money={money}
               />
              </div>
@@ -2166,6 +2161,18 @@ export default function Home() {
           </main>
         </div>
       </div>
+
+      <SplitBillModal 
+        isOpen={showSplitModal} 
+        onClose={() => setShowSplitModal(false)} 
+        grandTotal={grandTotal}
+        onSave={(data) => {
+           if (!currentOrder) return;
+           updateAndPersistCurrentOrder({ payment: "Split", splitPayment: data });
+           setShowSplitModal(false);
+           setBanner("Split payment applied.");
+        }}
+      />
 
       <TableManagementModal
         show={showTableModal}
@@ -2187,6 +2194,24 @@ export default function Home() {
         onDeleteTable={deleteTable}
         onConfirmCurrentOrderTable={confirmSelectedTable}
       />
+
+      {/* Professional Tax Invoice for Printing (Hidden in UI) */}
+      {currentOrder && (
+        <div className="hidden print:block">
+           <TaxInvoice 
+              orderId={currentOrder.id}
+              date={new Date().toLocaleString()}
+              customerName={currentOrder.customer}
+              mobile={currentOrder.mobile}
+              orderType={currentOrder.type}
+              tableId={currentOrder.tableId}
+              items={currentOrder.items}
+              subtotal={subtotal}
+              tax={tax}
+              grandTotal={grandTotal}
+           />
+        </div>
+      )}
     </div>
   );
 }

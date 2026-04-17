@@ -376,6 +376,68 @@ router.patch("/:id/clear-unpaid", async (req, res, next) => {
   }
 });
 
+// Un-settle order (move back to open state)
+router.patch("/:id/unsettle", async (req, res, next) => {
+  try {
+    const existing = await Order.findOne({ orderCode: req.params.id });
+    if (!existing) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    existing.settled = false;
+    existing.paymentStatus = "pending";
+    await existing.save();
+
+    res.json(toResponse(existing.toObject()));
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Day summary for Drawer (Cash, Card, etc.)
+router.get("/day-summary", async (req, res, next) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const orders = await Order.find({
+      settled: true,
+      updatedAt: { $gte: startOfDay },
+      isCancelled: { $ne: true }
+    }).lean();
+
+    const summary = {
+      Cash: 0,
+      Card: 0,
+      UPI: 0,
+      Other: 0,
+      Total: 0,
+      Count: orders.length
+    };
+
+    orders.forEach(order => {
+      const mode = order.payment || "Other";
+      if (mode === "Split" && order.splitPayment) {
+        summary.Cash += (order.splitPayment.cash || 0);
+        summary.UPI += (order.splitPayment.upi || 0);
+        summary.Total += (order.splitPayment.cash || 0) + (order.splitPayment.upi || 0);
+      } else {
+        const amt = order.amount || 0;
+        if (summary[mode] !== undefined) {
+           summary[mode] += amt;
+        } else {
+           summary.Other += amt;
+        }
+        summary.Total += amt;
+      }
+    });
+
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Clear all orders (development utility)
 router.delete("/", async (req, res, next) => {
   try {

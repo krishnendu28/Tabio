@@ -8,6 +8,7 @@ const orderRoutes = require("./routes/orders.routes");
 const tableRoutes = require("./routes/tables.routes");
 const authRoutes = require("./routes/auth.routes");
 const expenseRoutes = require("./routes/expenses.routes");
+const alertRoutes = require("./routes/alerts.routes");
 
 const app = express();
 
@@ -46,6 +47,10 @@ app.use("/auth", authRoutes);
 app.use("/api/pos/expenses", expenseRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/expenses", expenseRoutes);
+
+app.use("/api/pos/alerts", alertRoutes);
+app.use("/api/alerts", alertRoutes);
+app.use("/alerts", alertRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.originalUrl}` });

@@ -35,6 +35,8 @@ function createWindow() {
 
 function startBackend() {
   const backendPath = path.join(__dirname, "backend");
+  const nodePath = process.execPath;
+  
   backendProcess = spawn("node", ["src/server.js"], {
     cwd: backendPath,
     stdio: "inherit",
@@ -44,8 +46,10 @@ function startBackend() {
 
 function startFrontend() {
   const frontendPath = path.join(__dirname, "frontend");
-  // Assuming frontend is already built. We run next start.
-  frontendProcess = spawn("npx", ["next", "start", "-p", "3000"], {
+  // In production, we assume next is installed in frontend/node_modules
+  const nextBin = path.join(frontendPath, "node_modules", "next", "dist", "bin", "next");
+  
+  frontendProcess = spawn("node", [nextBin, "start", "-p", "3000"], {
     cwd: frontendPath,
     stdio: "inherit",
     shell: true,

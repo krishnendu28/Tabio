@@ -40,12 +40,10 @@ type BillEditorPanelProps = {
   onSaveAndEbill: () => void;
   onSettleAndSave: () => void;
   onKOT: () => void;
-  onKOTPrint: () => void;
-  isSavingAndPrinting: boolean;
-  isSavingAndEbill: boolean;
-  isSettlingAndSaving: boolean;
-  isCreatingKOT: boolean;
   isCreatingKOTPrint: boolean;
+  onReprint?: () => void;
+  onSplit?: () => void;
+  onVoid?: () => void;
   money: (value: number) => string;
 };
 
@@ -79,6 +77,9 @@ export function BillEditorPanel(props: BillEditorPanelProps) {
     onSaveAndEbill,
     onKOT,
     onKOTPrint,
+    onReprint,
+    onSplit,
+    onVoid,
   } = props;
 
   return (
@@ -351,9 +352,24 @@ export function BillEditorPanel(props: BillEditorPanelProps) {
             </button>
             {showMoreMenu && (
               <div className="absolute bottom-full right-0 mb-1 w-32 rounded bg-white p-1 shadow-xl border border-gray-200 z-50 flex flex-col font-medium text-gray-700 text-left">
-                <button className="text-left px-3 py-1.5 hover:bg-gray-100 rounded" onClick={() => { alert("Reprint Bill"); setShowMoreMenu(false); }}>Reprint</button>
-                <button className="text-left px-3 py-1.5 hover:bg-gray-100 rounded" onClick={() => { alert("Split Payment"); setShowMoreMenu(false); }}>Split</button>
-                <button className="text-left px-3 py-1.5 hover:bg-gray-100 rounded text-red-600" onClick={() => { alert("Void Bill"); setShowMoreMenu(false); }}>Void</button>
+                <button 
+                  className="text-left px-3 py-1.5 hover:bg-gray-100 rounded" 
+                  onClick={() => { onReprint?.(); setShowMoreMenu(false); }}
+                >
+                  Reprint
+                </button>
+                <button 
+                  className="text-left px-3 py-1.5 hover:bg-gray-100 rounded" 
+                  onClick={() => { onSplit?.(); setShowMoreMenu(false); }}
+                >
+                  Split
+                </button>
+                <button 
+                  className="text-left px-3 py-1.5 hover:bg-gray-100 rounded text-red-600" 
+                  onClick={() => { onVoid?.(); setShowMoreMenu(false); }}
+                >
+                  Void
+                </button>
               </div>
             )}
           </div>
