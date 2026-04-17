@@ -40,6 +40,11 @@ type BillEditorPanelProps = {
   onSaveAndEbill: () => void;
   onSettleAndSave: () => void;
   onKOT: () => void;
+  onKOTPrint: () => void;
+  isSavingAndPrinting?: boolean;
+  isSavingAndEbill?: boolean;
+  isSettlingAndSaving?: boolean;
+  isCreatingKOT?: boolean;
   isCreatingKOTPrint: boolean;
   onReprint?: () => void;
   onSplit?: () => void;

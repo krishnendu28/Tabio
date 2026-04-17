@@ -39,7 +39,7 @@ export default function SettingsPage() {
       }`}
     >
       <div className="flex min-h-screen">
-        <BillSidebar isDark={isDark} />
+        <BillSidebar />
         <main className="flex-1 p-6">
           <div className="mx-auto max-w-6xl space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">

@@ -3,12 +3,10 @@
 import { BarChart3, Box, FileText, List, LogOut, PieChart, RefreshCcw, Settings, SlidersHorizontal, Store } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 export function BillSidebar() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const view = searchParams.get("view");
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 
   const navigation = [

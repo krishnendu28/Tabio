@@ -12,9 +12,11 @@ import {
   RefreshCcw,
   Save,
   Settings,
+  SunMedium,
+  X,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActiveOrdersPanel } from "@/components/bill/ActiveOrdersPanel";
 import { BillEditorPanel } from "@/components/bill/BillEditorPanel";
@@ -27,6 +29,8 @@ import { OrderSidebar } from "@/components/bill/OrderSidebar";
 import { TaxInvoice } from "@/components/bill/TaxInvoice";
 import { SplitBillModal } from "@/components/bill/SplitBillModal";
 import type { BillOrder, MenuItem, OrderItem, OrderType, Palette, PaymentType, SectionType, SplitPayment, TableNode, TableStatus } from "@/components/bill/types";
+
+export const dynamic = "force-dynamic";
 
 type BackendMenuItem = {
   id?: string | number;
@@ -345,7 +349,6 @@ function money(value: number) {
 export default function Home() {
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [theme, setTheme] = useState<"dark" | "light">("light");
   const isDark = theme === "dark";
   const isThemeReadyRef = useRef(false);
@@ -493,14 +496,15 @@ export default function Home() {
   }, [openOrders]);
 
   useEffect(() => {
-    const view = searchParams.get("view");
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const view = params?.get("view") || null;
     if (view === "tables") {
       setShowTableEntry(true);
       setCandidateTableId(null);
       return;
     }
 
-    const tableFromQuery = searchParams.get("table");
+    const tableFromQuery = params?.get("table") || null;
     if (!tableFromQuery) {
       return;
     }
@@ -509,7 +513,7 @@ export default function Home() {
     setShowTableEntry(false);
     setNewOrderTableId(normalized);
     setCandidateTableId(normalized);
-  }, [searchParams]);
+  }, [pathname]);
 
   useEffect(() => {
     let isMounted = true;
@@ -2168,7 +2172,11 @@ export default function Home() {
         grandTotal={grandTotal}
         onSave={(data) => {
            if (!currentOrder) return;
-           updateAndPersistCurrentOrder({ payment: "Split", splitPayment: data });
+          const portions = Array.isArray(data) ? data : [];
+          const total = portions.reduce((sum, split) => sum + Number(split.amount || 0), 0) || grandTotal;
+          const cash = Number((Number(portions[0]?.amount || total / 2)).toFixed(2));
+          const upi = Number((total - cash).toFixed(2));
+          updateAndPersistCurrentOrder({ payment: "Split", splitPayment: { cash, upi } });
            setShowSplitModal(false);
            setBanner("Split payment applied.");
         }}
